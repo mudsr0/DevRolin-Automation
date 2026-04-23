@@ -1,11 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Sidebar from '../components/Sidebar';
 import KeywordBox from '../components/KeywordBox';
 import { theme } from '../styles/theme';
+import { getConfig } from '../api';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState(1);
+  const [configParams, setConfigParams] = useState(null);
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      const data = await getConfig();
+      if (data) {
+        setConfigParams(data);
+      }
+    };
+    fetchConfig();
+  }, []);
 
   const socialPlatforms = [
     {
@@ -60,25 +72,46 @@ const Dashboard = () => {
 
         {/* Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {socialPlatforms.map((platform, index) => (
-            <motion.div
-              key={platform.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <KeywordBox
-                id={platform.id}
-                title={platform.title}
-                icon={platform.icon}
-                gradient={platform.gradient}
-                hasProfileInput={platform.hasProfileInput}
-                profileLabel={platform.profileLabel}
-                profilePlaceholder={platform.profilePlaceholder}
-                keywordLabel={platform.keywordLabel}
-              />
-            </motion.div>
-          ))}
+          {socialPlatforms.map((platform, index) => {
+            let initialProfiles = [];
+            let initialKeywords = [];
+            let backendKey = platform.id;
+            
+            if (configParams && configParams[backendKey]) {
+              if (backendKey === 'reddit') {
+                initialProfiles = []; // Reddit doesn't use subreddits in this UI component input directly
+                initialKeywords = configParams[backendKey].keywords || [];
+              } else if (backendKey === 'linkedin') {
+                initialProfiles = configParams[backendKey].profiles || [];
+                initialKeywords = configParams[backendKey].keywords || [];
+              } else if (backendKey === 'twitter') {
+                initialProfiles = configParams[backendKey].usernames || [];
+                initialKeywords = configParams[backendKey].keywords || [];
+              }
+            }
+
+            return (
+              <motion.div
+                key={platform.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <KeywordBox
+                  id={platform.id}
+                  title={platform.title}
+                  icon={platform.icon}
+                  gradient={platform.gradient}
+                  hasProfileInput={platform.hasProfileInput}
+                  profileLabel={platform.profileLabel}
+                  profilePlaceholder={platform.profilePlaceholder}
+                  keywordLabel={platform.keywordLabel}
+                  initialProfiles={initialProfiles}
+                  initialKeywords={initialKeywords}
+                />
+              </motion.div>
+            );
+          })}
         </div>
       </main>
     </div>

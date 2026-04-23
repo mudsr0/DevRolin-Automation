@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiPlus, FiCheck } from 'react-icons/fi';
 import { theme } from '../styles/theme';
+import { updatePlatformConfig } from '../api';
 
 const KeywordBox = ({
   id,
@@ -11,16 +12,28 @@ const KeywordBox = ({
   hasProfileInput = false,
   profileLabel = '',
   profilePlaceholder = '',
-  keywordLabel = 'Search Keywords'
+  keywordLabel = 'Search Keywords',
+  initialProfiles = [],
+  initialKeywords = []
 }) => {
   // Profile Management
   const [profileInput, setProfileInput] = useState('');
-  const [profiles, setProfiles] = useState([]);
+  const [profiles, setProfiles] = useState(initialProfiles);
   const [profileError, setProfileError] = useState('');
   
   // Keywords Management
-  const [keywords, setKeywords] = useState([]);
+  const [keywords, setKeywords] = useState(initialKeywords);
   const [inputValue, setInputValue] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null); // null, 'success', 'error'
+
+  useEffect(() => {
+    setProfiles(initialProfiles);
+  }, [initialProfiles]);
+
+  useEffect(() => {
+    setKeywords(initialKeywords);
+  }, [initialKeywords]);
 
   // Validate Profile URL/Username
   const validateProfile = (url) => {
@@ -345,13 +358,38 @@ const KeywordBox = ({
       <motion.button
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
+        onClick={async () => {
+          setIsSubmitting(true);
+          setSubmitStatus(null);
+          try {
+            let payload = { keywords };
+            if (id === 'reddit') {
+              payload.subreddits = [];
+            } else if (id === 'linkedin') {
+              payload.profiles = profiles;
+            } else if (id === 'twitter') {
+              payload.usernames = profiles;
+            }
+            
+            await updatePlatformConfig(id, payload);
+            setSubmitStatus('success');
+            setTimeout(() => setSubmitStatus(null), 3000); // clear status after 3s
+          } catch (error) {
+            console.error(error);
+            setSubmitStatus('error');
+          } finally {
+            setIsSubmitting(false);
+          }
+        }}
+        disabled={isSubmitting}
         className="w-full py-3 rounded-lg font-medium transition-all mt-4"
         style={{
-          backgroundColor: theme.colors.primary,
-          color: theme.colors.text
+          backgroundColor: submitStatus === 'success' ? '#10B981' : submitStatus === 'error' ? theme.colors.error : theme.colors.primary,
+          color: theme.colors.text,
+          opacity: isSubmitting ? 0.7 : 1
         }}
       >
-        Submit
+        {isSubmitting ? 'Submitting...' : submitStatus === 'success' ? 'Saved Successfully!' : submitStatus === 'error' ? 'Error Saving' : 'Submit'}
       </motion.button>
       
     </motion.div>

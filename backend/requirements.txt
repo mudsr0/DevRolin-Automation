@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+pydantic
+
+python-dotenv
+
+playwright
+beautifulsoup4
+scrapling
+patchright
+curl-cffi
+browserforge
+
+msgspec
+requests
+
+openai

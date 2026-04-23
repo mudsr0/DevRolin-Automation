@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: devrolin_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount the configuration files to make states persist across reloads
+      - ./backend/data:/app/data
+      - ./backend/config.json:/app/config.json
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # VITE_API_BASE_URL specifies where the frontend sends config data inside client browsers.
+        # Even if docker bridges them, React's fetch() happens directly from browser,
+        # so this should be the public IP/Domain of your FastAPI server. (Localhost is fine for local setups).
+        VITE_API_BASE_URL: http://localhost:8000
+    container_name: devrolin_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
